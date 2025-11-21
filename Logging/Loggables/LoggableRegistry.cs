@@ -26,7 +26,7 @@ namespace Silksong.GameObjectDump.Logging.Loggables
         public static void Register<T1, T2>(Loggable<T1, T2> instance) where T1 : LogNode, new()
         {
             _registeredLoggables[typeof(T2)] = instance;
-            GameObjectDumpPlugin.Log($"[LogRegistry] added {typeof(T2).Name} - {instance.GetType().FullName}");
+            GameObjectDumpPlugin.Log($"[LogRegistry] added {instance.GetType().Name} - {typeof(T2).FullName}");
         }
 
         public static LogNode ToLog(object obj, LogContext ctx)
