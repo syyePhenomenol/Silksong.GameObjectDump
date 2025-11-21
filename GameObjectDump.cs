@@ -121,6 +121,13 @@ public static class GameObjectDump
 
         try
         {
+            string ext = Path.GetExtension(path).ToLowerInvariant();
+            if (ext is not ".txt" and not ".log" and not ".json")
+            {
+                GameObjectDumpPlugin.LogError($"Unsupported file type: {ext}");
+                return;
+            }
+
             if (!append) File.Delete(path);
             File.AppendAllText(path, sb.ToString());
         }
