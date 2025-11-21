@@ -35,7 +35,7 @@ public sealed record LogEdge
     public object? Object { get; set; }
     public string? Header { get; set; }
     public LogNode? Node { get; set; }
-    public bool InCoreHierarchy { get; set; }
+    internal bool InCoreHierarchy { get; set; }
 
     // Gets the target object by cached reflection and returns the LogEdge.
     public static LogEdge GetEdgeRef(object parent, string memberName, string? headerOverride = null)

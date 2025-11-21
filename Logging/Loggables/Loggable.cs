@@ -20,9 +20,6 @@ namespace Silksong.GameObjectDump.Logging.Loggables
             return new ValueLogNode() { ConciseLog = "[Loggable failed to get LogNode]" };
         }
 
-        public virtual void Fill(T1 node, T2 obj, LogContext ctx)
-        {
-            node.ConciseLog = $"[Loggable not implemented: {obj?.GetType().Name ?? "null"}]";
-        }
+        public abstract void Fill(T1 node, T2 obj, LogContext ctx);
     }
 }
