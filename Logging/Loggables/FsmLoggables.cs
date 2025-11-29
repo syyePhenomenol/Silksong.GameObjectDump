@@ -63,7 +63,7 @@ public class LoggableFsmState : Loggable<ReferenceLogNode, FsmState>
 
         List<LogEdge> actionEdges = [.. GetActionEdges(obj, ctx)];
         ReferenceLogNode actionsNode = new();
-        if (actionEdges.Any())
+        if (actionEdges.Count is not 0)
         {
             actionsNode.Children = actionEdges;
         }
@@ -103,7 +103,7 @@ public class LoggableFsmEvent : Loggable<ReferenceLogNode, FsmEvent>
     {
         var typeName = obj.GetPrettyNameFromObject();
         node.ConciseLog = $"{obj.Name} [{typeName}]";
-        DefaultLoggable.FillFields(node, obj, []);
+        DefaultLoggable.FillFields(node, obj, ctx, []);
         node.ExtraHeader = typeName;
     }
 }
@@ -115,7 +115,7 @@ public class LoggableFsmStateAction : Loggable<ReferenceLogNode, FsmStateAction>
         var typeName = obj.GetPrettyNameFromObject();
         node.ConciseLog = $"{typeName} [{typeof(FsmStateAction).Name}]";
         if (!ctx.IsCoreObject(obj)) return;
-        DefaultLoggable.FillFields(node, obj, []);
+        DefaultLoggable.FillFields(node, obj, ctx, []);
         node.ExtraHeader = $"--- {typeof(FsmStateAction).Name} - {typeName}";
     }
 }

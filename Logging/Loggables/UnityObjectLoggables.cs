@@ -8,7 +8,7 @@ public class LoggableUnityObject : Loggable<ReferenceLogNode, Object>
     public override void Fill(ReferenceLogNode node, Object obj, LogContext ctx)
     {
         node.ConciseLog = $"{obj.name} [{obj.GetPrettyNameFromObject()}]";
-        DefaultLoggable.FillFields(node, obj, ["name", "hideFlags"]);
+        DefaultLoggable.FillFields(node, obj, ctx, ["name", "hideFlags"]);
     }
 }
 
@@ -104,7 +104,7 @@ public class LoggableComponent : Loggable<ReferenceLogNode, Component>
     {
         FillDefaultComponent(node, obj);
         if (!ctx.IsCoreObject(obj)) return;
-        DefaultLoggable.Fill(node, obj, ["name", "hideFlags", "gameObject", "transform", "tag"]);
+        DefaultLoggable.Fill(node, obj, ctx, ["name", "hideFlags", "gameObject", "transform", "tag"]);
     }
 }
 
@@ -134,6 +134,6 @@ public class LoggableMonoBehaviour : Loggable<ReferenceLogNode, MonoBehaviour>
     {
         LoggableComponent.FillDefaultComponent(node, obj);
         if (!ctx.IsCoreObject(obj)) return;
-        DefaultLoggable.Fill(node, obj, ["name", "hideFlags", "gameObject", "transform", "tag"]);
+        DefaultLoggable.Fill(node, obj, ctx, ["name", "hideFlags", "gameObject", "transform", "tag"]);
     }
 }

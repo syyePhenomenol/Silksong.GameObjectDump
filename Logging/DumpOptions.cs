@@ -4,8 +4,6 @@ using UnityEngine;
 
 namespace Silksong.GameObjectDump.Logging;
 
-public enum ComponentFilterMode { Blacklist, Whitelist }
-
 public record DumpOptions
 {
     /// <summary>
@@ -28,6 +26,12 @@ public record DumpOptions
     /// If all of a GameObject or PlayMakerFSM's content are null or omitted, the corresponding parents are also omitted.
     /// </summary>
     public bool OmitIfNotFull { get; init; } = true;
+
+    /// <summary>
+    /// Whether or not an object of certain type fetched by the default (reflection-based) handler should be logged in full.
+    /// If false, it is completely omitted.
+    /// </summary>
+    public Func<Type, bool> DumpReflectedType { get; init; } = (c) => true;
 
     /// <summary>
     /// Replaces large enough arrays acquired by reflection with short text.

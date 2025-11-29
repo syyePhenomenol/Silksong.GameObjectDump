@@ -8,12 +8,6 @@ public sealed record LogEdge
 {
     public LogEdge() { }
 
-    public LogEdge(string? text, string? header)
-    {
-        Node = new ValueLogNode() { ConciseLog = text ?? "[null]" };
-        Header = header;
-    }
-
     public LogEdge(object? obj, string? header)
     {
         Object = obj;
@@ -22,6 +16,12 @@ public sealed record LogEdge
         if (Object is null)
         {
             Node = new ValueLogNode() { ConciseLog = "[null]" };
+            return;
+        }
+
+        if (Object is string s)
+        {
+            Node = new ValueLogNode() { ConciseLog = s };
             return;
         }
 
