@@ -90,22 +90,17 @@ public class LogContext(DumpOptions? dumpOptions = null)
 
         foreach (FsmState state in fsm.FsmStates)
         {
-            bool stateNotEmpty = false;
-
             foreach (FsmStateAction action in state.Actions)
             {
                 if (DumpOptions.DumpFullFsmAction.Invoke(action))
                 {
                     _coreObjects.Add(action);
-                    stateNotEmpty = true;
                     fsmNotEmpty = true;
                 }
             }
 
-            if (stateNotEmpty)
-            {
-                _coreObjects.Add(state);
-            }
+            // Always add states even when there aren't actions
+            _coreObjects.Add(state);
         }
 
         return fsmNotEmpty;
