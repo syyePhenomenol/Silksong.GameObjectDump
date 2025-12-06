@@ -9,13 +9,29 @@ namespace Silksong.GameObjectDump.Logging.Loggables
     public static class LoggableRegistry
     {
         public static DefaultLoggable DefaultLoggable { get; } = new();
+        public static DefaultForeignLoggable DefaultForeignLoggable { get; } = new();
         private static readonly Dictionary<Type, object?> _loggableCache = [];
+        private static readonly HashSet<Type> _registeredForeignTypes = [];
         private static readonly Dictionary<Type, object> _registeredLoggables = [];
 
         private static readonly Dictionary<Type, FieldInfo[]> _serializableFieldsCache = [];
         private static readonly Dictionary<Type, PropertyInfo[]> _getPropertiesCache = [];
+        private static readonly Dictionary<Type, MemberInfo[]> _allMembersCache = [];
         private static readonly Dictionary<(Type type, string name), MemberInfo?> _memberLookupCache = [];
         private static readonly Dictionary<Type, MethodInfo?> _toLogMethodCache = [];
+
+        /// <summary>
+        /// Add a foreign Type to be logged in a default way. Every field and property of the type will get dumped.
+        /// If you want more custom behaviour, register a Loggable instead.
+        /// </summary>
+        /// <param name="type"></param>
+        public static void Register(Type type)
+        {
+            if (type == typeof(object)) return;
+
+            _registeredForeignTypes.Add(type);
+            GameObjectDumpPlugin.Log($"[LogRegistry] added foreign type {type} with default logging");
+        }
 
         /// <summary>
         /// Add a Loggable to either add or override custom logging behaviour for certain types.
@@ -25,6 +41,8 @@ namespace Silksong.GameObjectDump.Logging.Loggables
         /// <param name="instance"></param>
         public static void Register<T1, T2>(Loggable<T1, T2> instance) where T1 : LogNode, new()
         {
+            if (typeof(T2) == typeof(object)) return;
+            
             _registeredLoggables[typeof(T2)] = instance;
             GameObjectDumpPlugin.Log($"[LogRegistry] added {instance.GetType().Name} - {typeof(T2).FullName}");
         }
@@ -35,6 +53,12 @@ namespace Silksong.GameObjectDump.Logging.Loggables
 
             if (_loggableCache.TryGetValue(type, out var cached))
                 return cached != null ? InvokeToLog(cached, obj, ctx) : DefaultLoggable.ToLog(obj, ctx);
+
+            if (_registeredForeignTypes.Any(ft => ft.IsAssignableFrom(type)))
+            {
+                _loggableCache[type] = DefaultForeignLoggable;
+                return DefaultForeignLoggable.ToLog(obj, ctx);
+            }
 
             if (_registeredLoggables.TryGetValue(type, out var exact))
             {
@@ -66,7 +90,7 @@ namespace Silksong.GameObjectDump.Logging.Loggables
             if (_serializableFieldsCache.TryGetValue(type, out var result))
                 return result;
 
-            result = [.. ComputeFields(type)];
+            result = [.. ComputeSerializableFields(type)];
             _serializableFieldsCache[type] = result;
             return result;
         }
@@ -79,8 +103,17 @@ namespace Silksong.GameObjectDump.Logging.Loggables
             result = [.. type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                 .Where(p => p.CanRead && p.GetIndexParameters().Length == 0)
                 .Where(f => f.GetCustomAttribute<ObsoleteAttribute>() == null)];
-            
             _getPropertiesCache[type] = result;
+            return result;
+        }
+        
+        public static MemberInfo[] GetAllMembersCached(Type type)
+        {
+            if (_allMembersCache.TryGetValue(type, out var result))
+                return result;
+
+            result = [.. ComputeAllMembers(type)];
+            _allMembersCache[type] = result;
             return result;
         }
 
@@ -115,7 +148,7 @@ namespace Silksong.GameObjectDump.Logging.Loggables
 
             foreach (var t in Assembly.GetExecutingAssembly().GetTypes())
             {
-                if (t == typeof(DefaultLoggable) || t.IsAbstract || t.IsInterface || t.ContainsGenericParameters)
+                if (typeof(DefaultLoggable).IsAssignableFrom(t) || t.IsAbstract || t.IsInterface || t.ContainsGenericParameters)
                     continue;
 
                 var baseType = FindLoggableBaseType(t);
@@ -145,23 +178,48 @@ namespace Silksong.GameObjectDump.Logging.Loggables
         {
             _serializableFieldsCache.Clear();
             _getPropertiesCache.Clear();
+            _allMembersCache.Clear();
             _memberLookupCache.Clear();
             _toLogMethodCache.Clear();
         }
-
-        private static IEnumerable<FieldInfo> ComputeFields(Type type)
+        
+        private static IEnumerable<FieldInfo> ComputeSerializableFields(Type type)
         {
-            BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+            BindingFlags flags =
+                BindingFlags.Instance |
+                BindingFlags.Public |
+                BindingFlags.NonPublic |
+                BindingFlags.DeclaredOnly;
 
-            foreach (var f in type.GetFields(flags)
+            Type? current = type;
+            while (current != null && current != typeof(object))
+            {
+                foreach (var f in current.GetFields(flags)
                     .Where(f => f.IsPublic || f.GetCustomAttribute<UnityEngine.SerializeField>() != null)
                     .Where(f => f.GetCustomAttribute<ObsoleteAttribute>() == null))
-                yield return f;
-
-            if (type.BaseType != null && type.BaseType != typeof(object))
-            {
-                foreach (var f in ComputeFields(type.BaseType))
+                {
                     yield return f;
+                }
+
+                current = current.BaseType;
+            }
+        }
+
+        private static IEnumerable<MemberInfo> ComputeAllMembers(Type t)
+        {
+            BindingFlags flags =
+                BindingFlags.Public |
+                BindingFlags.NonPublic |
+                BindingFlags.Instance |
+                BindingFlags.Static |
+                BindingFlags.DeclaredOnly;
+
+            Type? current = t;
+            while (current != null && current != typeof(object))
+            {
+                foreach (var f in current.GetFields(flags)) yield return f;
+                foreach (var p in current.GetProperties(flags)) yield return p;
+                current = current.BaseType;
             }
         }
 

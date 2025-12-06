@@ -42,13 +42,13 @@ public class LoggableIEnumerable : Loggable<ReferenceLogNode, IEnumerable>
     {
         if (!obj.GetEnumerator().MoveNext())
         {
-            node.ConciseLog = $"[empty {obj.GetType().GetPrettyNameFromType()}]";
+            node.ConciseLog = $"[empty {obj.GetPrettyNameFromObject()}]";
             return;
         } 
         
         List<LogEdge> children = [.. GetChildren(obj)];
 
-        node.ConciseLog = $"[{children.Count} objects in {obj.GetType().GetPrettyNameFromType()}]";
+        node.ConciseLog = $"[{children.Count} objects in {obj.GetPrettyNameFromObject()}]";
 
         if (children.Count > ctx.DumpOptions.LargeArrayThreshold) return;
 

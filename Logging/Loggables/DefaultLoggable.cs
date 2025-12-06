@@ -8,27 +8,30 @@ public class DefaultLoggable : Loggable<ReferenceLogNode, object>
 {
     public override void Fill(ReferenceLogNode node, object obj, LogContext ctx)
     {
-        Fill(node, obj, ctx);
+        FillBaseGameType(node, obj, ctx);
     }
 
     /// <summary>
     /// Tries to fill with serializable fields, otherwise tries to fill with public property getters.
+    /// Only base game types get handled by this method.
     /// </summary>
     /// <param name="node"></param>
     /// <param name="obj"></param>
     /// <param name="ignoreMembers"></param>
-    public static void Fill(ReferenceLogNode node, object obj, LogContext ctx, ICollection<string>? ignoreMembers = null, bool allowForeignTypes = false)
+    public static void FillBaseGameType(ReferenceLogNode node, object obj, LogContext ctx, ICollection<string>? ignoreMembers = null)
     {
-        var assemblyName = obj.GetType().Assembly.FullName;
+        var assemblyName = obj.GetType().Assembly.GetName().Name;
 
-        if (!allowForeignTypes
-            && !assemblyName.Contains("Unity")
-            && !assemblyName.Contains("Assembly-CSharp")
-            && !assemblyName.Contains("TeamCherry")
-            && !assemblyName.Contains("HutongGames")
-            && !assemblyName.Contains("PlayMaker"))
+        if (!assemblyName.StartsWith("Unity")
+            && !assemblyName.StartsWith("Assembly-CSharp")
+            && !assemblyName.StartsWith("TeamCherry")
+            && !assemblyName.StartsWith("HutongGames")
+            && !assemblyName.StartsWith("PlayMaker")
+            && !assemblyName.StartsWith("InControl")
+            && !assemblyName.StartsWith("QuestPlayMakerActions")
+            && !assemblyName.StartsWith("StateMachineBehaviours"))
         {
-            node.ConciseLog = $"[unhandled type {obj.GetType().GetPrettyNameFromType()}]";
+            node.ConciseLog = $"[unhandled type {obj.GetPrettyNameFromObject()}]";
             return;
         }
 
@@ -87,7 +90,7 @@ public class DefaultLoggable : Loggable<ReferenceLogNode, object>
         foreach (var f in LoggableRegistry.GetSerializableFieldsCached(parent.GetType()))
         {
             if (ignoreFields?.Contains(f.Name) ?? false) continue;
-            yield return (f.FieldType, LogEdge.GetEdgeRef(parent, f.Name));
+            yield return (f.FieldType, LogEdge.GetEdgeRef(parent, f));
         }
     }
 
@@ -96,7 +99,7 @@ public class DefaultLoggable : Loggable<ReferenceLogNode, object>
         foreach (var p in LoggableRegistry.GetGetPropertiesCached(parent.GetType()))
         {
             if (ignoreProperties?.Contains(p.Name) ?? false) continue;
-            yield return (p.PropertyType, LogEdge.GetEdgeRef(parent, p.Name));
+            yield return (p.PropertyType, LogEdge.GetEdgeRef(parent, p));
         }
     }
 

@@ -37,7 +37,13 @@ public sealed record LogEdge
     public LogNode? Node { get; set; }
     internal bool InCoreHierarchy { get; set; }
 
-    // Gets the target object by cached reflection and returns the LogEdge.
+    /// <summary>
+    /// Gets the target object by cached reflection and returns the LogEdge.
+    /// </summary>
+    /// <param name="parent"></param>
+    /// <param name="memberName"></param>
+    /// <param name="headerOverride"></param>
+    /// <returns></returns>
     public static LogEdge GetEdgeRef(object parent, string memberName, string? headerOverride = null)
     {
         var header = headerOverride ?? memberName;
@@ -48,6 +54,19 @@ public sealed record LogEdge
             return new($"[Could not find member name {memberName} in {parentType.GetPrettyNameFromType()}]", header);
         }
 
+        return GetEdgeRef(parent, member, headerOverride);
+    }
+
+    /// <summary>
+    /// Gets the target object by cached reflection and returns the LogEdge.
+    /// </summary>
+    /// <param name="parent"></param>
+    /// <param name="member"></param>
+    /// <param name="headerOverride"></param>
+    /// <returns></returns>
+    public static LogEdge GetEdgeRef(object parent, MemberInfo member, string? headerOverride = null)
+    {
+        var header = headerOverride ?? member.Name;
         object? child;
 
         try
@@ -61,10 +80,10 @@ public sealed record LogEdge
         }
         catch
         {
-            return new($"[Failed to get member {memberName} in {parentType.GetPrettyNameFromType()}]", header);
+            return new($"[Failed to get member {member.Name} in {parent.GetPrettyNameFromObject()}]", header);
         }
 
-        return new(child, headerOverride ?? memberName);
+        return new(child, header);
     }
 
     // Fills edges with children nodes in DFS order.
